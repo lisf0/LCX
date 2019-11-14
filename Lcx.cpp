@@ -8,28 +8,28 @@
 #include <stdio.h>
 #pragma comment(lib, "ws2_32.lib")
 
-//ºê¶¨Òå
+//å®å®šä¹‰
 
 typedef	struct{
 	SOCKET	s1;
 	SOCKET	s2;
 		}Stu_sock;
 
-//º¯ÊıÉùÃ÷
+//å‡½æ•°å£°æ˜
 void version();
-int param(int argc,char **argv);		//¶ÔÃüÁîĞĞ²ÎÊı
-void Funlisten(int port1, int port2);	//¼àÌı¹¦ÄÜº¯Êı
-bool bindAndFunlisten(SOCKET s,int port);//°ó¶¨socketµÄµØÖ·½á¹¹
-void datatrans(LPVOID data);			//Êı¾İ×ª·¢º¯Êı
-void slave(char* hostIp,char * slaveIp,int destionPort,int slavePort);//slaveº¯Êı
+int param(int argc,char **argv);		//å¯¹å‘½ä»¤è¡Œå‚æ•°
+void Funlisten(int port1, int port2);	//ç›‘å¬åŠŸèƒ½å‡½æ•°
+bool bindAndFunlisten(SOCKET s,int port);//ç»‘å®šsocketçš„åœ°å€ç»“æ„
+void datatrans(LPVOID data);			//æ•°æ®è½¬å‘å‡½æ•°
+void slave(char* hostIp,char * slaveIp,int destionPort,int slavePort);//slaveå‡½æ•°
 bool checkIP(char * str);
-int client_connect(int sockfd,char* server,int port);//Á¬½Ó·şÎñ¶Ë
+int client_connect(int sockfd,char* server,int port);//è¿æ¥æœåŠ¡ç«¯
 
 void main(int argc,char **argv)
 {
 	
 	version();
-	//²ÎÊıÅĞ¶Ï
+	//å‚æ•°åˆ¤æ–­
 	WSADATA wsadata;
     WSAStartup(MAKEWORD(1, 1), &wsadata);
 	char hostIp[20]={0};
@@ -50,7 +50,7 @@ void main(int argc,char **argv)
 
 int param(int argc,char **argv)
 {
-	//stricmp==strcmp ignore caseºöÂÔ´óĞ¡Ğ´
+	//stricmp==strcmp ignore caseå¿½ç•¥å¤§å°å†™
 	if (argc==4&&stricmp(argv[1],"-listen")==0)
 	{
 //		cout<<"Funlisten"<<endl;
@@ -67,14 +67,14 @@ int param(int argc,char **argv)
 }
 /************************************************************************/
 /*                                                                      */
-/*				listen ¹¦ÄÜÄ£¿é											*/
+/*				listen åŠŸèƒ½æ¨¡å—											*/
 /************************************************************************/
 
 void Funlisten(int port1,int port2)
 {
 	Stu_sock	stu_sock;
 	
-	//´´½¨Ì×½Ó×Ö
+	//åˆ›å»ºå¥—æ¥å­—
 	SOCKET sock1=socket(AF_INET,SOCK_STREAM,0);
 	SOCKET sock2=socket(AF_INET,SOCK_STREAM,0);
 	if (sock1<0||sock1<0)
@@ -83,12 +83,12 @@ void Funlisten(int port1,int port2)
 		return;
 	}
 
-	//°ó¶¨¶Ë¿Úµ½socket²¢¼àÌı
+	//ç»‘å®šç«¯å£åˆ°socketå¹¶ç›‘å¬
 	if (!bindAndFunlisten(sock1,port1)||!bindAndFunlisten(sock2,port2))
 	{
 		return;
 	}
-	//¶¼¼àÌıºÃÁË½ÓÏÂÀ´¡­¡­
+	//éƒ½ç›‘å¬å¥½äº†æ¥ä¸‹æ¥â€¦â€¦
 
 
 	int SizeOfAddr=sizeof(sockaddr);
@@ -96,7 +96,7 @@ void Funlisten(int port1,int port2)
 	{
 		cout<<"[+] Waiting for Client ......"<<endl;
 		sockaddr_in	remoteSockAddr;
-		//sock1µÈ´ıÁ¬½Ó
+		//sock1ç­‰å¾…è¿æ¥
 		SOCKET	recvSock1=accept(sock1,(sockaddr *)&remoteSockAddr,&SizeOfAddr);
 		cout<<recvSock1<<endl;
 		if (recvSock1<0)
@@ -116,22 +116,22 @@ void Funlisten(int port1,int port2)
 		}
 		cout<<"[+] Accept a Client on port"<<port1<<"  from "<<inet_ntoa(remoteSockAddr.sin_addr)<<endl;
 
-		//Á½¸ö¶¼Á¬ÉÏÀ´ÁË
+		//ä¸¤ä¸ªéƒ½è¿ä¸Šæ¥äº†
 		cout<<"[+] Accept Connect OK!"<<endl;
 		
 		
 		stu_sock.s1=recvSock1;		stu_sock.s2=recvSock2;
 		DWORD	dwThreadID;
 		
-		//´´½¨Ò»¸ö×ª·¢Êı¾İµÄÏß³Ì
+		//åˆ›å»ºä¸€ä¸ªè½¬å‘æ•°æ®çš„çº¿ç¨‹
 		HANDLE	hThread=CreateThread(0,0,(LPTHREAD_START_ROUTINE)datatrans,(LPVOID)&stu_sock,0,&dwThreadID);
 		if (hThread==NULL)
 		{
 			TerminateThread(hThread,0);
-			return;//Ïß³Ì´íÁËÖ±½ÓÍË³ö
+			return;//çº¿ç¨‹é”™äº†ç›´æ¥é€€å‡º
 		}
 		cout<<"[+] CreateThread OK!"<<endl;
-		Sleep(800);//¹ÒÆğµ±Ç°Ïß³Ì
+		Sleep(800);//æŒ‚èµ·å½“å‰çº¿ç¨‹
 		
 		//
 	}
@@ -142,7 +142,7 @@ void Funlisten(int port1,int port2)
 
 bool bindAndFunlisten(SOCKET s,int port)
 {
-	//µØÖ·½á¹¹
+	//åœ°å€ç»“æ„
 	sockaddr_in	addr;
 	memset(&addr,0,sizeof(addr));
 	addr.sin_port=htons(port);
@@ -152,14 +152,14 @@ bool bindAndFunlisten(SOCKET s,int port)
 	char on =1;
 	setsockopt(s,SOL_SOCKET,SO_REUSEADDR,&on,sizeof(on));
 
-	//°ó¶¨µØÖ·½á¹¹
+	//ç»‘å®šåœ°å€ç»“æ„
 	if (bind(s,(const sockaddr *)&addr,sizeof(sockaddr))<0)
 	{
 		cout<<"[-] Socket bind error."<<endl;
 		return false;
 	}
 	
-	//¼àÌı¶Ë¿Ú
+	//ç›‘å¬ç«¯å£
 	if (listen(s,5)<0)
 	{
 		cout<<"[-] Listen error."<<endl;
@@ -173,8 +173,8 @@ void datatrans(LPVOID data)
 	char host_slave[20]={0};
 	char host_hacker[20]={0};
 	Stu_sock *stuSock=(Stu_sock *)data;
-	SOCKET	s1=stuSock->s1;	//½ÓÊÜµÄÊÇslaveµÄÊı¾İ
-	SOCKET	s2=stuSock->s2;	//·¢ËÍ³öÈ¥µÄsocket
+	SOCKET	s1=stuSock->s1;	//æ¥å—çš„æ˜¯slaveçš„æ•°æ®
+	SOCKET	s2=stuSock->s2;	//å‘é€å‡ºå»çš„socket
 	int	sentacount1=0;
 //	cout<<stuSock->s1<<endl;
 //	cout<<stuSock->s2<<endl;
@@ -233,12 +233,12 @@ void datatrans(LPVOID data)
 			break;
 		}
 
-		//Ã»³ö´í£¬Ã»³¬Ê±
+		//æ²¡å‡ºé”™ï¼Œæ²¡è¶…æ—¶
 		if (FD_ISSET(s1,&readfd)&&flag)///////////////////////////////////1
 		{
 	//		if (totalread1<20408)
 			{
-				 readsize=recv(s1, RecvBuffer, 20480, 0);//½ÓÊÜhostµÄÇëÇó¡£¡£
+				 readsize=recv(s1, RecvBuffer, 20480, 0);//æ¥å—hostçš„è¯·æ±‚ã€‚ã€‚
 				 if (readsize==-1)
 				 {
 					 break;
@@ -254,10 +254,10 @@ void datatrans(LPVOID data)
 		}
 
 
-		if (FD_ISSET(s1,&writefd)&&flag&&(readsize>0))///////////////////////////////////2
+		if (FD_ISSET(s2,&writefd)&&flag&&(readsize>0))///////////////////////////////////2
 		{
 
-			int sendsize=send(s2,SendBuffer,readsize,0);//·¢¸øslave
+			int sendsize=send(s2,SendBuffer,readsize,0);//å‘ç»™slave
 			if (sendsize==0)
 			{
 				break;
@@ -275,7 +275,7 @@ void datatrans(LPVOID data)
 		if (FD_ISSET(s2,&readfd)&&(!flag))///////////////////////////////////3
 		{
 			{
-				readsize=recv(s2, RecvBuffer, 20480, 0);//½ÓÊÜslave·µ»ØÊı¾İ
+				readsize=recv(s2, RecvBuffer, 20480, 0);//æ¥å—slaveè¿”å›æ•°æ®
 				
 				memcpy(SendBuffer,RecvBuffer,readsize);
 				cout<<" [+] Recv "<<readsize<<" bytes "<<"from host."<<endl;
@@ -285,7 +285,7 @@ void datatrans(LPVOID data)
 		}
 		if (FD_ISSET(s1,&writefd)&&(!flag)&&(readsize>0))///////////////////////////////////4
 		{
-			readsize=send(s1,SendBuffer,readsize,0);//·¢¸øhost
+			readsize=send(s1,SendBuffer,readsize,0);//å‘ç»™host
 			if (readsize==0)
 			{
 				break;
@@ -313,7 +313,7 @@ void datatrans(LPVOID data)
 
 /************************************************************************/
 /*                                                                      */
-/*				slave ¹¦ÄÜÄ£¿é											*/
+/*				slave åŠŸèƒ½æ¨¡å—											*/
 /************************************************************************/
 void slave(char* hostIp,char * slaveIp,int destionPort,int slavePort)
 {
@@ -325,7 +325,7 @@ void slave(char* hostIp,char * slaveIp,int destionPort,int slavePort)
 		int			l;
 	while(TRUE)
 	{
-		//´´½¨Ì×½Ó×Ö
+		//åˆ›å»ºå¥—æ¥å­—
 		SOCKET sock1=socket(AF_INET,SOCK_STREAM,0);
 		SOCKET sock2=socket(AF_INET,SOCK_STREAM,0);
 
@@ -341,24 +341,24 @@ void slave(char* hostIp,char * slaveIp,int destionPort,int slavePort)
 		{
 			closesocket(sock1);
 			closesocket(sock2);
-			continue;/*Ìø¹ıÕâ´ÎÑ­»·*/
+			continue;/*è·³è¿‡è¿™æ¬¡å¾ªç¯*/
            }
 		
 	memset(buffer,0,20480);
 	while(1)
 	{
-		//°ÑsockÇåÁã,¼ÓÈëset¼¯
+		//æŠŠsockæ¸…é›¶,åŠ å…¥seté›†
 		FD_ZERO(&fd);
 		FD_SET(sock1, &fd);
 		
-		//selectÊÂ¼ş	¶Á Ğ´ Òì³£
+		//selectäº‹ä»¶	è¯» å†™ å¼‚å¸¸
 		if (select(sock1+1, &fd, NULL, NULL, NULL) == SOCKET_ERROR) 
 		{
-			//²»¶®
+			//ä¸æ‡‚
 			if (errno == WSAEINTR) continue;
 			break;
 		}
-		//FD_ISSET·µ»ØÖµ>0 ±íÊ¾SETÀïµÄ¿É¶ÁĞ´
+		//FD_ISSETè¿”å›å€¼>0 è¡¨ç¤ºSETé‡Œçš„å¯è¯»å†™
 		if (FD_ISSET(sock1, &fd)) 
 		{
 			l=recv(sock1, buffer, 20480, 0);
@@ -410,7 +410,7 @@ void slave(char* hostIp,char * slaveIp,int destionPort,int slavePort)
 	}
 }
 
-//¼ì²éIPµØÖ·¸ñÊ½ÊÇ·ñÕıÈ·
+//æ£€æŸ¥IPåœ°å€æ ¼å¼æ˜¯å¦æ­£ç¡®
 bool checkIP(char * str)
 {
 	if(INADDR_NONE == inet_addr(str))
@@ -419,24 +419,24 @@ bool checkIP(char * str)
 }
 
 int client_connect(int sockfd,char* server,int port)
-{					/*sock*/		/*Ô¶³ÌIP*/	/*Ô¶³Ì¶Ë¿Ú*/
+{					/*sock*/		/*è¿œç¨‹IP*/	/*è¿œç¨‹ç«¯å£*/
 	
-	//ÉùÃ÷
+	//å£°æ˜
 	struct sockaddr_in cliaddr;	
 	struct hostent *host;
 	
-	if(!(host=gethostbyname(server)))	//»ñµÃÔ¶³ÌÖ÷»úµÄIP
+	if(!(host=gethostbyname(server)))	//è·å¾—è¿œç¨‹ä¸»æœºçš„IP
 	{
      //   printf("[-] Gethostbyname(%s) error:%s\n",server,strerror(errno));
         return(0);
 	}      
-	//¸øµØÖ·½á¹¹¸³Öµ
+	//ç»™åœ°å€ç»“æ„èµ‹å€¼
 	memset(&cliaddr, 0, sizeof(struct sockaddr));
 	cliaddr.sin_family=AF_INET;
-	cliaddr.sin_port=htons(port);/*Ô¶³Ì¶Ë¿Ú*/
+	cliaddr.sin_port=htons(port);/*è¿œç¨‹ç«¯å£*/
 	cliaddr.sin_addr=*((struct in_addr *)host->h_addr);//host ip
 	
-	//È¥Á¬½ÓÔ¶³ÌÕıÔÚlistenµÄÖ÷»ú
+	//å»è¿æ¥è¿œç¨‹æ­£åœ¨listençš„ä¸»æœº
 	if(connect(sockfd,(struct sockaddr *)&cliaddr,sizeof(struct sockaddr))<0)
 	{
 //        printf("[-] Connect error.\r\n");
