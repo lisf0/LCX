@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <winsock2.h> 
+#include <ws2tcpip.h>
 #include <io.h>
 #include <signal.h>
 #include <string.h>
@@ -113,6 +114,7 @@ void Funlisten(int port1, int port2)
 			cout << "[-] Accept error." << endl;
 			continue;
 		}
+
 		cout << "[+] Accept a Client on port " << port1 << "  from " << inet_ntoa(remoteSockAddr.sin_addr) << endl;
 		cout << "[+] Waiting another Client on port:" << port2 << "...." << endl;
 
@@ -323,7 +325,7 @@ void datatrans(LPVOID data)
 
 		flag = !flag;
 
-		Sleep(5);
+		Sleep(1); //减少cpu占用,注释本行 在i7-1270F的U上 这个进程需要占用5%
 	}
 	closesocket(s1);
 	closesocket(s2);
@@ -348,7 +350,7 @@ void slave(const char* hostIp, const  char* slaveIp, int destionPort, int slaveP
 		SOCKET sock1 = socket(AF_INET, SOCK_STREAM, 0);
 		SOCKET sock2 = socket(AF_INET, SOCK_STREAM, 0);
 
-		cout << "[+] Make a Connection to " << hostIp << "on port:" << slaveIp << "...." << endl;
+		cout << "[+] Make a Connection to " << hostIp << " on port:" << destionPort << "...." << endl;
 		if (sock1 < 0 || sock2 < 0)
 		{
 			cout << "[-] Create socket error" << endl;
@@ -383,7 +385,7 @@ void slave(const char* hostIp, const  char* slaveIp, int destionPort, int slaveP
 				l = recv(sock1, buffer, 20480, 0);
 				break;
 			}
-			Sleep(5);
+			Sleep(1);//减少cpu占用,注释本行 在i7-1270F的U上 这个进程需要占用10%
 		}
 
 		if (l <= 0)
@@ -394,7 +396,7 @@ void slave(const char* hostIp, const  char* slaveIp, int destionPort, int slaveP
 		while (1)
 		{
 			cout << "[+] Connect OK!    \n[+] xlcTeam congratulations!" << endl;
-			cout << "[+] Make a Connection to " << hostIp << "on port:" << slaveIp << "...." << endl;
+			cout << "[+] Make a Connection to " << slaveIp << " on port:" << slavePort << "...." << endl;
 			fflush(stdout);
 			if (client_connect(sock2, slaveIp, slavePort) == 0)
 			{
