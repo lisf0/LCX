@@ -85,7 +85,7 @@ void Funlisten(int port1, int port2)
 	//创建套接字
 	SOCKET sock1 = socket(AF_INET, SOCK_STREAM, 0);
 	SOCKET sock2 = socket(AF_INET, SOCK_STREAM, 0);
-	if (sock1 < 0 || sock1 < 0)
+	if (sock1 < 0 || sock2 < 0)
 	{
 		cout << "[-] Create socket error" << endl;
 		return;
@@ -338,7 +338,7 @@ void slave(char* hostIp, char* slaveIp, int destionPort, int slavePort)
 		SOCKET sock2 = socket(AF_INET, SOCK_STREAM, 0);
 
 		cout << "[+] Make a Connection to " << hostIp << "on port:" << slaveIp << "...." << endl;
-		if (sock1 < 0 || sock1 < 0)
+		if (sock1 < 0 || sock2 < 0)
 		{
 			cout << "[-] Create socket error" << endl;
 			return;
