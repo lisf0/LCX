@@ -89,7 +89,7 @@ void Funlisten(int port1, int port2)
 	SOCKET sock2 = socket(AF_INET, SOCK_STREAM, 0);
 	if (sock1 < 0 || sock2 < 0)
 	{
-		cout << "[-] Create socket error" << endl;
+		cout << "[-] Create socket error:" << WSAGetLastError() << endl;
 		return;
 	}
 
@@ -108,10 +108,9 @@ void Funlisten(int port1, int port2)
 		sockaddr_in	remoteSockAddr;
 		//sock1等待连接
 		SOCKET	recvSock1 = accept(sock1, (sockaddr*)&remoteSockAddr, &SizeOfAddr);
-		cout << recvSock1 << endl;
 		if (recvSock1 < 0)
 		{
-			cout << "[-] Accept error." << endl;
+			cout << "[-] Accept error:" << WSAGetLastError() << endl;
 			continue;
 		}
 
@@ -122,7 +121,7 @@ void Funlisten(int port1, int port2)
 		cout << recvSock2 << endl;
 		if (recvSock2 < 0)
 		{
-			cout << "[-] Accept error." << endl;
+			cout << "[-] Accept error:" << WSAGetLastError() << endl;
 			continue;
 		}
 		cout << "[+] Accept a Client on port" << port1 << "  from " << inet_ntoa(remoteSockAddr.sin_addr) << endl;
@@ -166,14 +165,14 @@ bool bindAndFunlisten(SOCKET s, int port)
 	//绑定地址结构
 	if (bind(s, (const sockaddr*)&addr, sizeof(sockaddr)) < 0)
 	{
-		cout << "[-] Socket bind error." << endl;
+		cout << "[-] Socket bind error:" << WSAGetLastError() << endl;
 		return false;
 	}
 
 	//监听端口
 	if (listen(s, 5) < 0)
 	{
-		cout << "[-] Listen error." << endl;
+		cout << "[-] Listen error:" << WSAGetLastError() << endl;
 		return false;
 	}
 	return true;
@@ -181,6 +180,9 @@ bool bindAndFunlisten(SOCKET s, int port)
 
 void datatrans(LPVOID data)
 {
+	// 获取当前线程句柄
+	DWORD threadID = GetCurrentThreadId();
+
 	char host_slave[20] = { 0 };
 	char host_hacker[20] = { 0 };
 	Stu_sock* stuSock = (Stu_sock*)data;
@@ -206,7 +208,7 @@ void datatrans(LPVOID data)
 		strcpy(host_hacker, inet_ntoa(addr.sin_addr));
 		int port_hacker = ntohs(addr.sin_port);
 	}
-	cout << "[+] Start Transport (" << host_slave << "<-> " << host_hacker << ") ......" << endl;
+	cout << "[+](" << threadID << ") Start Transport (" << host_slave << "<-> " << host_hacker << ") ......" << endl;
 	char RecvBuffer[20480];
 	char SendBuffer[20480];
 
@@ -221,8 +223,6 @@ void datatrans(LPVOID data)
 	int readsize;
 	while (TRUE)
 	{
-
-
 		readsize = 0;
 		FD_ZERO(&readfd);
 		FD_ZERO(&writefd);
@@ -236,12 +236,12 @@ void datatrans(LPVOID data)
 
 		if (result == SOCKET_ERROR)
 		{
-			cout << "[-] Select error:" << WSAGetLastError() << endl;
+			cout << "[-](" << threadID << ") Select error:" << WSAGetLastError() << endl;
 			break;
 		}
 		else if (result == 0)
 		{
-			cout << "[-] Socket time out." << endl;
+			cout << "[-](" << threadID << ") Socket time out." << endl;
 			break;
 		}
 
@@ -257,12 +257,12 @@ void datatrans(LPVOID data)
 				}
 				if (readsize == SOCKET_ERROR)
 				{
-					cout << "[-] Recv from s1 error:" << WSAGetLastError() << endl;
+					cout << "[-](" << threadID << ") Recv from s1 error:" << WSAGetLastError() << endl;
 					break;
 				}
 				memcpy(SendBuffer, RecvBuffer, readsize);
 				memset(RecvBuffer, 0, 20480);
-				cout << " [+] Recv " << readsize << " bytes " << "from host." << endl;
+				cout << " [+](" << threadID << ") Recv " << readsize << " bytes " << "from host." << endl;
 			}
 		}
 
@@ -278,12 +278,12 @@ void datatrans(LPVOID data)
 
 			if (sendsize == SOCKET_ERROR)
 			{
-				cout << "[-] Send to s2 error:" << WSAGetLastError() << endl;
+				cout << "[-](" << threadID << ") Send to s2 error:" << WSAGetLastError() << endl;
 				break;
 			}
 
 			memset(SendBuffer, 0, 20480);
-			cout << " Send " << sendsize << " bytes " << endl;
+			cout << "[+](" << threadID << ") Send " << sendsize << " bytes " << endl;
 
 		}
 		if (FD_ISSET(s2, &readfd) && (!flag))///////////////////////////////////3
@@ -296,12 +296,12 @@ void datatrans(LPVOID data)
 				}
 				if (readsize == SOCKET_ERROR)
 				{
-					cout << "[-] Recv from s2 error:" << WSAGetLastError() << endl;
+					cout << "[-](" << threadID << ") Recv from s2 error:" << WSAGetLastError() << endl;
 					break;
 				}
 
 				memcpy(SendBuffer, RecvBuffer, readsize);
-				cout << " [+] Recv " << readsize << " bytes " << "from host." << endl;
+				cout << "[+](" << threadID << ") Recv " << readsize << " bytes " << "from host." << endl;
 				//totalread1+=readsize;
 				memset(RecvBuffer, 0, 20480);
 			}
@@ -315,10 +315,10 @@ void datatrans(LPVOID data)
 			}
 			if (readsize == SOCKET_ERROR)
 			{
-				cout << "[-] Send to s2 error:" << WSAGetLastError() << endl;
+				cout << "[-](" << threadID << ") Send to s2 error:" << WSAGetLastError() << endl;
 				break;
 			}
-			cout << " Send " << readsize << " bytes " << endl;
+			cout << "[+](" << threadID << ") Send " << readsize << " bytes " << endl;
 			memset(SendBuffer, 0, 20480);
 
 		}
@@ -329,7 +329,8 @@ void datatrans(LPVOID data)
 	}
 	closesocket(s1);
 	closesocket(s2);
-	cout << "[+] OK! I Closed The Two Socket." << endl;
+	cout << "[+](" << threadID << ") OK! I Closed The Two Socket." << endl;
+	cout << "[+](" << threadID << ") Thread Exit." << endl;
 }
 
 /************************************************************************/
@@ -353,7 +354,7 @@ void slave(const char* hostIp, const  char* slaveIp, int destionPort, int slaveP
 		cout << "[+] Make a Connection to " << hostIp << " on port:" << destionPort << "...." << endl;
 		if (sock1 < 0 || sock2 < 0)
 		{
-			cout << "[-] Create socket error" << endl;
+			cout << "[-] Create socket error:" << WSAGetLastError() << endl;
 			return;
 		}
 		//
@@ -365,8 +366,10 @@ void slave(const char* hostIp, const  char* slaveIp, int destionPort, int slaveP
 			continue;/*跳过这次循环*/
 		}
 
+		cout << "[+] Connect " << hostIp << " Success!" << endl;
+
 		memset(buffer, 0, 20480);
-		while (1)
+		while (TRUE)
 		{
 			//把sock清零,加入set集
 			FD_ZERO(&fd);
@@ -393,27 +396,48 @@ void slave(const char* hostIp, const  char* slaveIp, int destionPort, int slaveP
 			cout << "[-] There is a error...Create a new connection." << endl;
 			continue;
 		}
-		while (1)
+
+		int reconnect = 0;
+		int connectret = 0;
+		while (TRUE)
 		{
-			cout << "[+] Connect OK!    \n[+] xlcTeam congratulations!" << endl;
-			cout << "[+] Make a Connection to " << slaveIp << " on port:" << slavePort << "...." << endl;
+			cout << "[+] Make a Connection to " << slaveIp << " on port:" << slavePort << "...." << reconnect << endl;
 			fflush(stdout);
 			if (client_connect(sock2, slaveIp, slavePort) == 0)
 			{
-				closesocket(sock1);
+				reconnect++;
+				//closesocket(sock1);
 				closesocket(sock2);
+
+				if (reconnect >= 10)	//尝试10次都连不上,那就不连了
+				{
+					closesocket(sock1);
+					connectret = -1;
+					break;
+				}
+				Sleep(1000);
+
 				continue;
 			}
 
+			cout << "[+] Connect " << slaveIp << " Success!" << endl;
+
 			if (send(sock2, buffer, l, 0) == SOCKET_ERROR)
 			{
-				cout << "[-] Send failed." << endl;
+				cout << "[-] Send failed error:" << WSAGetLastError() << endl;
 				continue;
 			}
 
 			l = 0;
 			memset(buffer, 0, 20480);
 			break;
+		}
+
+		if (connectret == -1)
+		{
+			cout << "[-] Connect " << slaveIp << " on port:" << slavePort << " failed !" << endl;
+			cout << "[-] Reset All Connect !" << endl;
+			continue;
 		}
 
 		cout << "[+] All Connect OK!" << endl;
@@ -448,7 +472,7 @@ int client_connect(int sockfd, const char* server, int port)
 
 	if (!(host = gethostbyname(server)))	//获得远程主机的IP
 	{
-		//   printf("[-] Gethostbyname(%s) error:%s\n",server,strerror(errno));
+		cout << "[-] Gethostbyname(" << server << ") error:" << strerror(errno) << endl;
 		return(0);
 	}
 	//给地址结构赋值
@@ -458,9 +482,9 @@ int client_connect(int sockfd, const char* server, int port)
 	cliaddr.sin_addr = *((struct in_addr*)host->h_addr);//host ip
 
 	//去连接远程正在listen的主机
-	if (connect(sockfd, (struct sockaddr*)&cliaddr, sizeof(struct sockaddr)) < 0)
+	if (connect(sockfd, (struct sockaddr*)&cliaddr, sizeof(struct sockaddr)) == SOCKET_ERROR)
 	{
-		//        printf("[-] Connect error.\r\n");
+		cout << "[-] Connect error:" << WSAGetLastError() << endl;
 		return(0);
 	}
 	return(1);
