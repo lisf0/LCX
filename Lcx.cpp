@@ -28,19 +28,20 @@ int param(int argc, char** argv);		//对命令行参数
 void Funlisten(int port1, int port2);	//监听功能函数
 bool bindAndFunlisten(SOCKET s, int port);//绑定socket的地址结构
 void datatrans(LPVOID data);			//数据转发函数
-void slave(char* hostIp, char* slaveIp, int destionPort, int slavePort);//slave函数
-bool checkIP(char* str);
-int client_connect(int sockfd, char* server, int port);//连接服务端
+void slave(const char* hostIp, const char* slaveIp, int destionPort, int slavePort);//slave函数
+bool checkIP(const char* str);
+int client_connect(int sockfd, const  char* server, int port);//连接服务端
 
 int main(int argc, char** argv)
 {
-
-	version();
 	//参数判断
 	WSADATA wsadata;
 	WSAStartup(MAKEWORD(1, 1), &wsadata);
-	char hostIp[20] = { 0 };
-	char slaveIp[20] = { 0 };
+
+	//slave("192.168.50.70", "127.0.0.1", 8456, 7456);
+	//Funlisten(8456,9456);
+	//return 0;
+
 	int ret = 1;
 	ret = param(argc, argv);
 	if (ret == 1)//Funlisten
@@ -49,10 +50,10 @@ int main(int argc, char** argv)
 	}
 	else if (ret == 2)
 	{
-		strcpy(hostIp, argv[2]);
-		strcpy(slaveIp, argv[4]);
 		slave(argv[2], argv[4], atoi(argv[3]), atoi(argv[5]));
 	}
+	// 清理 Winsock2
+	WSACleanup();
 	return 0;
 }
 
@@ -208,7 +209,8 @@ void datatrans(LPVOID data)
 	char SendBuffer[20480];
 
 
-	fd_set	readfd; fd_set	writefd;
+	fd_set	readfd;
+	fd_set	writefd;
 	timeval	timeset;
 	timeset.tv_sec = 300;
 	timeset.tv_usec = 0;
@@ -230,9 +232,9 @@ void datatrans(LPVOID data)
 
 		int result = select(maxfd, &readfd, &writefd, NULL, &timeset);
 
-		if (result < 0 && (errno != EINTR))
+		if (result == SOCKET_ERROR)
 		{
-			cout << "[-] Select error." << endl;
+			cout << "[-] Select error:" << WSAGetLastError() << endl;
 			break;
 		}
 		else if (result == 0)
@@ -247,13 +249,14 @@ void datatrans(LPVOID data)
 			//		if (totalread1<20408)
 			{
 				readsize = recv(s1, RecvBuffer, 20480, 0);//接受host的请求。。
-				if (readsize == -1)
+				if (readsize == 0)
 				{
 					break;
 				}
-				if (readsize == SOCKET_ERROR || readsize == 0)
+				if (readsize == SOCKET_ERROR)
 				{
-					cout << "!!!" << endl;
+					cout << "[-] Recv from s1 error:" << WSAGetLastError() << endl;
+					break;
 				}
 				memcpy(SendBuffer, RecvBuffer, readsize);
 				memset(RecvBuffer, 0, 20480);
@@ -270,9 +273,10 @@ void datatrans(LPVOID data)
 			{
 				break;
 			}
-			if (sendsize < 0 && (errno != EINTR))
+
+			if (sendsize == SOCKET_ERROR)
 			{
-				cout << "[-] Send to s2 unknow error." << endl;
+				cout << "[-] Send to s2 error:" << WSAGetLastError() << endl;
 				break;
 			}
 
@@ -284,6 +288,15 @@ void datatrans(LPVOID data)
 		{
 			{
 				readsize = recv(s2, RecvBuffer, 20480, 0);//接受slave返回数据
+				if (readsize == 0)
+				{
+					break;
+				}
+				if (readsize == SOCKET_ERROR)
+				{
+					cout << "[-] Recv from s2 error:" << WSAGetLastError() << endl;
+					break;
+				}
 
 				memcpy(SendBuffer, RecvBuffer, readsize);
 				cout << " [+] Recv " << readsize << " bytes " << "from host." << endl;
@@ -298,9 +311,9 @@ void datatrans(LPVOID data)
 			{
 				break;
 			}
-			if (readsize < 0)
+			if (readsize == SOCKET_ERROR)
 			{
-				cout << "[-] Send to s2 unknow error." << endl;
+				cout << "[-] Send to s2 error:" << WSAGetLastError() << endl;
 				break;
 			}
 			cout << " Send " << readsize << " bytes " << endl;
@@ -311,8 +324,6 @@ void datatrans(LPVOID data)
 		flag = !flag;
 
 		Sleep(5);
-
-
 	}
 	closesocket(s1);
 	closesocket(s2);
@@ -323,7 +334,7 @@ void datatrans(LPVOID data)
 /*                                                                      */
 /*				slave 功能模块											*/
 /************************************************************************/
-void slave(char* hostIp, char* slaveIp, int destionPort, int slavePort)
+void slave(const char* hostIp, const  char* slaveIp, int destionPort, int slavePort)
 {
 
 	//checkIP(hostIp);
@@ -419,14 +430,14 @@ void slave(char* hostIp, char* slaveIp, int destionPort, int slavePort)
 }
 
 //检查IP地址格式是否正确
-bool checkIP(char* str)
+bool checkIP(const char* str)
 {
 	if (INADDR_NONE == inet_addr(str))
 		return FALSE;
 	return true;
 }
 
-int client_connect(int sockfd, char* server, int port)
+int client_connect(int sockfd, const char* server, int port)
 {					/*sock*/		/*远程IP*/	/*远程端口*/
 
 	//声明
